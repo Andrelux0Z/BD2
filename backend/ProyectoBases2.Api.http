@@ -1,0 +1,6 @@
+@ProyectoBases2.Api_HostAddress = http://localhost:5028
+
+GET {{ProyectoBases2.Api_HostAddress}}/api/ejemplo/
+Accept: application/json
+
+###

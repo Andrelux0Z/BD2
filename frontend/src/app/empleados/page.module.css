@@ -1,0 +1,92 @@
+.page {
+  --ink: #222222;
+  --muted: #6a6a6a;
+  --accent: #1aa04a;
+  --outline: #dadada;
+  --font-body: "Tahoma", "Verdana", sans-serif;
+
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background: #f7f7f7;
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+.card {
+  width: 600px;
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 26px;
+  text-align: left;
+  font-weight: 600;
+  width: 100%;
+}
+
+.filterRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.input {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 4px;
+  border: 1px solid var(--outline);
+  background: #ffffff;
+  font-size: 14px;
+  color: var(--ink);
+  flex: 1; /* Permite a la caja de texto tomar el espacio restante */
+}
+
+.input:focus {
+  outline: none;
+  border-color: #888888;
+}
+
+.button {
+  height: 36px;
+  border-radius: 4px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 24px;
+  transition: background 120ms ease, transform 120ms ease;
+  white-space: nowrap; /* Mantiene el botón de filtrado intacto en una línea */
+}
+
+.button:hover {
+  background: #178742;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.listPlaceholder {
+  height: 300px;
+  border: 2px dashed var(--outline);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 14px;
+}

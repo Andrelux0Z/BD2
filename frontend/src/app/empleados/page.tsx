@@ -41,8 +41,13 @@ export default function Empleados() {
   };
 
   const handleIrAMovimientos = (empleado: Empleado) => {
-    // Codifica la identidad para la url del futuro módulo sugerido
-    router.push(`/empleados/${encodeURIComponent(empleado.documentoIdentidad)}/movimientos`);
+    // Guarda el ID en sessionStorage para evitar enviarlo en la URL
+    sessionStorage.setItem("empleadoId", String(empleado.id));
+    
+    // Remueve los espacios del nombre para evitar el %20 en el navegador
+    const nombreSinEspacios = empleado.nombre.replace(/\s+/g, "");
+    
+    router.push(`/empleados/${encodeURIComponent(nombreSinEspacios)}/movimientos`);
   };
 
   return (

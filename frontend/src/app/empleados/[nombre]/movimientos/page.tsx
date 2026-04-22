@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import styles from "../../../page.module.css";
+import styles from "../../page.module.css";
 
 interface EmpleadoInfo {
   valorDocumentoIdentidad: string;
@@ -84,11 +84,36 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
           </span>
         </div>
 
-        <div 
-          className={styles.listPlaceholder} 
-          style={{ border: "2px dashed var(--outline)", display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
-          <span style={{ color: "var(--muted)" }}>Aquí irá la lista de movimientos</span>
+        <div className={styles.listPlaceholder}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Usuario</th>
+                <th>Monto</th>
+                <th>Nuevo Saldo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movimientos.map((mov, index) => (
+                <tr key={index}>
+                  <td>{new Date(mov.fecha).toLocaleDateString()}</td>
+                  <td>{mov.nombreTipoMovimiento}</td>
+                  <td>{mov.nombreUsuario}</td>
+                  <td>{mov.monto}</td>
+                  <td>{mov.nuevoSaldo}</td>
+                </tr>
+              ))}
+              {movimientos.length === 0 && (
+                <tr style={{ background: "transparent" }}>
+                  <td colSpan={5} style={{ textAlign: "center", color: "#888", padding: "30px 0" }}>
+                    No se encontraron movimientos registrados.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
         
         <div style={{ display: "flex", justifyContent: "flex-end" }}>

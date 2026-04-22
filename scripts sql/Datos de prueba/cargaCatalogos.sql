@@ -40,14 +40,15 @@ SET @xml = '
 </Datos>'
 
 -- Puestos
+/*
 INSERT INTO dbo.Puesto (Nombre, SalarioxHora)
 SELECT
     x.value('@Nombre',        'NVARCHAR(100)')
     ,x.value('@SalarioxHora', 'DECIMAL(10,2)')
 FROM @xml.nodes('/Datos/Puestos/Puesto') AS t(x)
+*/
 
 -- TipoEvento
-SET IDENTITY_INSERT dbo.TipoEvento ON
 
 INSERT INTO dbo.TipoEvento (Id, Nombre)
 SELECT
@@ -55,10 +56,9 @@ SELECT
     ,x.value('@Nombre', 'NVARCHAR(100)')
 FROM @xml.nodes('/Datos/TiposEvento/TipoEvento') AS t(x)
 
-SET IDENTITY_INSERT dbo.TipoEvento OFF
 
 -- TipoMovimiento
-SET IDENTITY_INSERT dbo.TipoMovimiento ON
+
 
 INSERT INTO dbo.TipoMovimiento (Id, Nombre, TipoAccion)
 SELECT
@@ -67,7 +67,6 @@ SELECT
     ,x.value('@TipoAccion', 'NVARCHAR(20)')
 FROM @xml.nodes('/Datos/TiposMovimientos/TipoMovimiento') AS t(x)
 
-SET IDENTITY_INSERT dbo.TipoMovimiento OFF
 
 -- Verificacion
 SELECT * FROM dbo.Puesto

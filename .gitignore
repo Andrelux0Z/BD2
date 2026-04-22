@@ -1,0 +1,22 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Env/settings
+appsettings.Development.json
+
+# Visual Studio files
+.vs/
+*.pdb
+
+appsettings.json

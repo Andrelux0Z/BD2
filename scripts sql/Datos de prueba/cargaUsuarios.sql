@@ -11,7 +11,7 @@ SET @xml = '
     </Usuarios>
 </Datos>'
 
-SET IDENTITY_INSERT dbo.Usuario ON
+
 
 INSERT INTO dbo.Usuario (Id, Username, Password)
 SELECT
@@ -20,7 +20,7 @@ SELECT
     ,x.value('@Pass',   'NVARCHAR(100)')
 FROM @xml.nodes('/Datos/Usuarios/usuario') AS t(x)
 
-SET IDENTITY_INSERT dbo.Usuario OFF
+
 
 -- Verificacion
 SELECT * FROM dbo.Usuario

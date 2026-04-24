@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
 interface Empleado {
-  id: number;
   nombre: string;
   documentoIdentidad: string;
 }
@@ -12,7 +11,14 @@ interface Empleado {
 export default function Empleados() {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [filterText, setFilterText] = useState("");
+  const [showAddEmployeeMenu, setShowAddEmployeeMenu] = useState(false);
   const router = useRouter();
+  const [formNombre, setFormNombre] = useState("");
+  const [formDocumento, setFormDocumento] = useState("");
+  const [puestos, setPuestos] = useState<Array<{ id: number; nombre: string }>>([]);
+  const [formPuesto, setFormPuesto] = useState<number>(0);
+  const [submitText, setSubmitText] = useState("Agregar");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const fetchEmpleados = async (filtro?: string) => {
     try {
@@ -41,78 +47,198 @@ export default function Empleados() {
   };
 
   const handleIrAMovimientos = (empleado: Empleado) => {
-    // Guarda el ID en sessionStorage para evitar enviarlo en la URL
-    sessionStorage.setItem("empleadoId", String(empleado.id));
-    
-    // Remueve los espacios del nombre para evitar el %20 en el navegador
-    const nombreSinEspacios = empleado.nombre.replace(/\s+/g, "");
-    
-    router.push(`/empleados/${encodeURIComponent(nombreSinEspacios)}/movimientos`);
+    // Reemplazar espacios por guiones para una URL más limpia
+    const nombreFormateado = empleado.nombre.replace(/\s+/g, "-");
+    router.push(`/empleados/${encodeURIComponent(nombreFormateado)}/movimientos`);
+  };
+
+  const handleAgregarEmpleado = () => {
+    setShowAddEmployeeMenu(true);
+  };
+
+  useEffect(() => {
+    // Cuando se abre el modal, cargar la lista de puestos
+    if (showAddEmployeeMenu) {
+      fetch("http://localhost:5028/api/empleados/puestos")
+        .then((r) => r.json())
+        .then((data) => setPuestos(data))
+        .catch((err) => console.error(err));
+    }
+  }, [showAddEmployeeMenu]);
+
+  const nameAllowed = (name: string) => {
+    return /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/.test(name.trim());
+  };
+
+  const handleDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (/^\d*$/.test(val)) {
+      setFormDocumento(val);
+    }
+  };
+
+  const submitAgregarEmpleado = async () => {
+    setErrorMessage("");
+
+    if (!formNombre.trim()) {
+      setErrorMessage("El nombre es requerido");
+      return;
+    }
+    if (!nameAllowed(formNombre)) {
+      setErrorMessage("El nombre solo puede tener letras");
+      return;
+    }
+    if (!formDocumento.trim()) {
+      setErrorMessage("La identificación es requerida");
+      return;
+    }
+    if (formPuesto === 0) {
+      setErrorMessage("Por favor seleccione un puesto");
+      return;
+    }
+
+    try {
+      setSubmitText("Guardando...");
+
+      const res = await fetch("http://localhost:5028/api/empleados", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: formNombre.trim(), documento: formDocumento.trim(), idPuesto: formPuesto }),
+      });
+
+      if (res.ok) {
+        // refrescar la lista
+        handleCerrarMenu();
+        fetchEmpleados();
+      } else if (res.status === 409) {
+        const data = await res.json();
+        setErrorMessage(data.message || "Conflicto al crear empleado");
+      } else {
+        const data = await res.json();
+        setErrorMessage(data.message || "Error al crear empleado");
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMessage("Error al crear empleado");
+    } finally {
+      setSubmitText("Agregar");
+    }
+  };
+
+  const handleCerrarMenu = () => {
+    setShowAddEmployeeMenu(false);
+    setFormNombre("");
+    setFormDocumento("");
+    setFormPuesto(0);
+    setErrorMessage("");
   };
 
   return (
     <div className={styles.page}>
-      <main className={styles.card}>
-        <h1 className={styles.title}>Empleados</h1>
+      <div className={styles.contentWrap}>
+        <main className={styles.card}>
+          <h1 className={styles.title}>Empleados</h1>
         
-        <div className={styles.filterRow}>
-          <input
-            className={styles.input}
-            type="text"
-            placeholder="Escriba para filtrar..."
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-            aria-label="Caja de texto para filtrar empleados"
-          />
-          <button className={styles.button} onClick={handleFilter}>
-            Filtrar
+          <div className={styles.filterRow}>
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="Escriba para filtrar..."
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              aria-label="Caja de texto para filtrar empleados"
+            />
+            <button className={styles.button} onClick={handleFilter}>
+              Filtrar
+            </button>
+          </div>
+
+          <div className={styles.listPlaceholder}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Documento de Identidad</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {empleados.map((emp) => (
+                  <tr key={emp.documentoIdentidad}>
+                    <td>{emp.nombre}</td>
+                    <td>{emp.documentoIdentidad}</td>
+                    <td>
+                      <div className={styles.actionButtons}>
+                        <button 
+                          className={styles.movimientosBtn} 
+                          onClick={() => handleIrAMovimientos(emp)}
+                        >
+                          Movimientos
+                        </button>
+                        <button 
+                          className={styles.moreBtn} 
+                          title="Opciones adicionales: Editar, Borrar, Consultar"
+                          onClick={() => alert("Opciones en construcción")}
+                        >
+                          ...
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {empleados.length === 0 && (
+                  <tr style={{ background: "transparent" }}>
+                    <td colSpan={3} style={{ textAlign: "center", color: "#888", padding: "30px 0" }}>
+                      No se encontraron empleados registrados.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </main>
+
+        <div className={styles.addEmployeeSection}>
+          <button className={styles.addEmployeeBtn} onClick={handleAgregarEmpleado}>
+            Agregar Empleado
           </button>
         </div>
+      </div>
 
-        <div className={styles.listPlaceholder}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Documento de Identidad</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {empleados.map((emp) => (
-                <tr key={emp.id}>
-                  <td>{emp.nombre}</td>
-                  <td>{emp.documentoIdentidad}</td>
-                  <td>
-                    <div className={styles.actionButtons}>
-                      <button 
-                        className={styles.movimientosBtn} 
-                        onClick={() => handleIrAMovimientos(emp)}
-                      >
-                        Movimientos
-                      </button>
-                      <button 
-                        className={styles.moreBtn} 
-                        title="Opciones adicionales: Editar, Borrar, Consultar"
-                        onClick={() => alert("Opciones en construcción")}
-                      >
-                        ...
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {empleados.length === 0 && (
-                <tr style={{ background: "transparent" }}>
-                  <td colSpan={3} style={{ textAlign: "center", color: "#888", padding: "30px 0" }}>
-                    No se encontraron empleados registrados.
-                  </td>
-                </tr>
+      {showAddEmployeeMenu && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCard}>
+            <h2 className={styles.addEmployeeMenuTitle}>Agregar empleado</h2>
+
+            <form className={styles.modalForm} onSubmit={(e) => e.preventDefault()}>
+              <label className={styles.fieldLabel} htmlFor="empNombre">Nombre</label>
+              <input id="empNombre" className={styles.modalInput} type="text" name="nombre" value={formNombre} onChange={(e) => setFormNombre(e.target.value)} placeholder="Nombre completo" />
+
+              <label className={styles.fieldLabel} htmlFor="empDocumento">Identificación</label>
+              <input id="empDocumento" className={styles.modalInput} type="text" name="documento" value={formDocumento} onChange={handleDocumentoChange} placeholder="Sólo números" />
+
+              <label className={styles.fieldLabel} htmlFor="empPuesto">Puesto</label>
+              <select id="empPuesto" className={styles.modalInput} value={formPuesto} onChange={(e) => setFormPuesto(Number(e.target.value))}>
+                <option value={0}>Seleccione...</option>
+                {puestos.map((p) => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </select>
+
+              {errorMessage && (
+                <p style={{ color: "red", marginTop: "1rem", textAlign: "center", fontSize: "14px" }}>
+                  {errorMessage}
+                </p>
               )}
-            </tbody>
-          </table>
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.modalButton} onClick={handleCerrarMenu}>Volver</button>
+                <button type="submit" className={styles.modalButton} onClick={submitAgregarEmpleado}>{submitText}</button>
+              </div>
+            </form>
+          </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }

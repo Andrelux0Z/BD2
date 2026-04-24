@@ -21,11 +21,10 @@ interface Movimiento {
 }
 
 export default function MovimientosPage({ params }: { params: Promise<{ nombre: string }> }) {
+  const unwrappedParams = use(params);
   const [empleado, setEmpleado] = useState<EmpleadoInfo | null>(null);
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const router = useRouter();
-  
-  const unwrappedParams = use(params);
   const nombreEmpleado = unwrappedParams.nombre;
 
   const fetchMovimientos = async (id: string) => {
@@ -48,15 +47,29 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
   };
 
   useEffect(() => {
-    // Leemos el ID del empleado que se guardó desde la pantalla anterior
-    const idGuardado = sessionStorage.getItem("empleadoId");
-    
-    if (idGuardado) {
-      fetchMovimientos(idGuardado);
-    } else {
-      // Si por alguna razón no hay ID (p.e. refrescó la página en una nueva pestaña), vuelve a empleados
-      router.push("/empleados");
-    }
+    // Revertir los guiones por espacios para buscarlo en la BD correctamente
+    const nombreDecodificado = decodeURIComponent(nombreEmpleado).replace(/-/g, " ");
+
+    const obtener = async () => {
+      try {
+        const res = await fetch(`http://localhost:5028/api/empleados/byname/${encodeURIComponent(nombreDecodificado)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.empleado) {
+            fetchMovimientos(String(data.empleado.id));
+          } else {
+            router.push("/empleados");
+          }
+        } else {
+          router.push("/empleados");
+        }
+      } catch (err) {
+        console.error(err);
+        router.push("/empleados");
+      }
+    };
+
+    obtener();
   }, [router]);
 
   const handleRegresar = () => {

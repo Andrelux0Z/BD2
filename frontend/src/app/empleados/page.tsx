@@ -328,7 +328,7 @@ export default function Empleados() {
                                 Consultar
                               </button>
                               <button onClick={() => handleAbrirEditar(emp)} style={menuItemStyle}>
-                                Editar
+                                Actualizar
                               </button>
                               <button onClick={() => handleAbrirBorrar(emp)} style={{ ...menuItemStyle, color: "#cc2927" }}>
                                 Borrar
@@ -387,11 +387,11 @@ export default function Empleados() {
         </div>
       )}
 
-      {/*EDITAR*/}
+      {/*ACTUALIZAR*/}
       {showEditar && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalCard}>
-            <h2 className={styles.addEmployeeMenuTitle}>Editar Empleado</h2>
+            <h2 className={styles.addEmployeeMenuTitle}>Actualizar Empleado</h2>
             <form className={styles.modalForm} onSubmit={(e) => e.preventDefault()}>
               <label className={styles.fieldLabel}>Nombre</label>
               <input

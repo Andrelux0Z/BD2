@@ -1,11 +1,19 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
 interface Empleado {
+  id: number;
   nombre: string;
   documentoIdentidad: string;
+}
+
+interface EmpleadoDetalle {
+  nombre: string;
+  valorDocumentoIdentidad: string;
+  nombrePuesto: string;
+  saldoVacaciones: number;
 }
 
 export default function Empleados() {
@@ -19,6 +27,22 @@ export default function Empleados() {
   const [formPuesto, setFormPuesto] = useState<number>(0);
   const [submitText, setSubmitText] = useState("Agregar");
   const [errorMessage, setErrorMessage] = useState("");
+  // Menu desplegable
+  const [menuAbierto, setMenuAbierto] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  // consultar
+  const [showConsultar, setShowConsultar] = useState(false);
+  const [empleadoDetalle, setEmpleadoDetalle] = useState<EmpleadoDetalle | null>(null);
+  // editar
+  const [showEditar, setShowEditar] = useState(false);
+  const [editId, setEditId] = useState<number>(0);
+  const [editNombre, setEditNombre] = useState("");
+  const [editDocumento, setEditDocumento] = useState("");
+  const [editPuesto, setEditPuesto] = useState<number>(0);
+  const [editError, setEditError] = useState("");
+  // borrar
+  const [showBorrar, setShowBorrar] = useState(false);
+  const [borrarEmpleado, setBorrarEmpleado] = useState<Empleado | null>(null);
 
   const fetchEmpleados = async (filtro?: string) => {
     try {
@@ -40,6 +64,16 @@ export default function Empleados() {
 
   useEffect(() => {
     fetchEmpleados();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuAbierto(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleFilter = () => {
@@ -124,6 +158,98 @@ export default function Empleados() {
       setSubmitText("Agregar");
     }
   };
+//  CONSULTAR 
+  const handleConsultar = async (empleado: Empleado) => {
+    setMenuAbierto(null);
+    try {
+      const res = await fetch(`http://localhost:5028/api/empleados/${empleado.id}`);
+      const data = await res.json();
+      if (data.success) {
+        setEmpleadoDetalle(data.empleado);
+        setShowConsultar(true);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  //  EDITAR 
+  const handleAbrirEditar = async (empleado: Empleado) => {
+    setMenuAbierto(null);
+    setEditId(empleado.id);
+    setEditNombre(empleado.nombre);
+    setEditDocumento(empleado.documentoIdentidad);
+    setEditError("");
+
+    if (puestos.length === 0) {
+      const res = await fetch("http://localhost:5028/api/empleados/puestos");
+      const data = await res.json();
+      setPuestos(data);
+    }
+
+    setShowEditar(true);
+  };
+
+  const handleGuardarEdicion = async () => {
+    setEditError("");
+
+    if (!editNombre.trim()) { setEditError("El nombre es requerido"); return; }
+    if (!editDocumento.trim()) { setEditError("La identificación es requerida"); return; }
+    if (editPuesto === 0) { setEditError("Seleccione un puesto"); return; }
+
+    try {
+      const res = await fetch(`http://localhost:5028/api/empleados/${editId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: editNombre.trim(), documento: editDocumento.trim(), idPuesto: editPuesto })
+      });
+
+      if (res.ok) {
+        setShowEditar(false);
+        fetchEmpleados();
+      } else {
+        const data = await res.json();
+        setEditError(data.message || "Error al actualizar");
+      }
+    } catch (err) {
+      console.error(err);
+      setEditError("Error de conexión");
+    }
+  };
+
+  //  BORRAR 
+  const handleAbrirBorrar = async (empleado: Empleado) => {
+    setMenuAbierto(null);
+    setBorrarEmpleado(empleado);
+
+    try {
+      await fetch(`http://localhost:5028/api/empleados/${empleado.id}/intento-borrado`, {
+        method: "POST"
+      });
+    } catch (err) {
+      console.error(err);
+    }
+
+    setShowBorrar(true);
+  };
+
+  const handleConfirmarBorrado = async () => {
+    if (!borrarEmpleado) return;
+
+    try {
+      const res = await fetch(`http://localhost:5028/api/empleados/${borrarEmpleado.id}`, {
+        method: "DELETE"
+      });
+
+      if (res.ok) {
+        setShowBorrar(false);
+        setBorrarEmpleado(null);
+        fetchEmpleados();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleCerrarMenu = () => {
     setShowAddEmployeeMenu(false);
@@ -175,13 +301,41 @@ export default function Empleados() {
                         >
                           Movimientos
                         </button>
-                        <button 
-                          className={styles.moreBtn} 
-                          title="Opciones adicionales: Editar, Borrar, Consultar"
-                          onClick={() => alert("Opciones en construcción")}
-                        >
-                          ...
-                        </button>
+
+
+                        <div ref={menuAbierto === emp.id ? menuRef : null} style={{ position: "relative" }}>
+                          <button
+                            className={styles.moreBtn}
+                            onClick={() => setMenuAbierto(menuAbierto === emp.id ? null : emp.id)}
+                          >
+                            ...
+                          </button>
+
+                          {menuAbierto === emp.id && (
+                            <div style={{
+                              position: "absolute",
+                              right: 0,
+                              top: "110%",
+                              background: "#fff",
+                              border: "1px solid #dadada",
+                              borderRadius: "6px",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                              zIndex: 100,
+                              minWidth: "130px",
+                              overflow: "hidden"
+                            }}>
+                              <button onClick={() => handleConsultar(emp)} style={menuItemStyle}>
+                                Consultar
+                              </button>
+                              <button onClick={() => handleAbrirEditar(emp)} style={menuItemStyle}>
+                                Editar
+                              </button>
+                              <button onClick={() => handleAbrirBorrar(emp)} style={{ ...menuItemStyle, color: "#cc2927" }}>
+                                Borrar
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -204,6 +358,114 @@ export default function Empleados() {
           </button>
         </div>
       </div>
+
+      {/*CONSULTAR*/}
+      {showConsultar && empleadoDetalle && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCard}>
+            <h2 className={styles.addEmployeeMenuTitle}>Consultar Empleado</h2>
+            <div className={styles.modalForm}>
+              <label className={styles.fieldLabel}>Nombre</label>
+              <p style={{ margin: 0, fontSize: "14px" }}>{empleadoDetalle.nombre}</p>
+
+              <label className={styles.fieldLabel}>Identificación</label>
+              <p style={{ margin: 0, fontSize: "14px" }}>{empleadoDetalle.valorDocumentoIdentidad}</p>
+
+              <label className={styles.fieldLabel}>Puesto</label>
+              <p style={{ margin: 0, fontSize: "14px" }}>{empleadoDetalle.nombrePuesto}</p>
+
+              <label className={styles.fieldLabel}>Saldo de Vacaciones</label>
+              <p style={{ margin: 0, fontSize: "14px" }}>{String(empleadoDetalle.saldoVacaciones)}</p>
+
+              <div className={styles.modalActions}>
+                <button className={styles.modalButton} onClick={() => setShowConsultar(false)}>
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/*EDITAR*/}
+      {showEditar && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCard}>
+            <h2 className={styles.addEmployeeMenuTitle}>Editar Empleado</h2>
+            <form className={styles.modalForm} onSubmit={(e) => e.preventDefault()}>
+              <label className={styles.fieldLabel}>Nombre</label>
+              <input
+                className={styles.modalInput}
+                type="text"
+                value={editNombre}
+                onChange={(e) => setEditNombre(e.target.value)}
+              />
+
+              <label className={styles.fieldLabel}>Identificación</label>
+              <input
+                className={styles.modalInput}
+                type="text"
+                value={editDocumento}
+                onChange={(e) => {
+                  if (/^\d*$/.test(e.target.value)) setEditDocumento(e.target.value);
+                }}
+              />
+
+              <label className={styles.fieldLabel}>Puesto</label>
+              <select
+                className={styles.modalInput}
+                value={editPuesto}
+                onChange={(e) => setEditPuesto(Number(e.target.value))}
+              >
+                <option value={0}>Seleccione...</option>
+                {puestos.map((p) => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </select>
+
+              {editError && (
+                <p style={{ color: "red", margin: 0, fontSize: "14px" }}>{editError}</p>
+              )}
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.modalButton} onClick={() => setShowEditar(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" className={styles.modalButton} onClick={handleGuardarEdicion}>
+                  Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/*BORRAR*/}
+      {showBorrar && borrarEmpleado && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCard}>
+            <h2 className={styles.addEmployeeMenuTitle}>Eliminar Empleado</h2>
+            <div className={styles.modalForm}>
+              <p style={{ margin: 0, fontSize: "14px" }}>
+                ¿Está seguro de eliminar a <strong>{borrarEmpleado.nombre}</strong> con identificación <strong>{borrarEmpleado.documentoIdentidad}</strong>?
+              </p>
+              <div className={styles.modalActions}>
+                <button className={styles.modalButton} onClick={() => setShowBorrar(false)}>
+                  Cancelar
+                </button>
+                <button
+                  className={styles.modalButton}
+                  style={{ background: "#cc2927" }}
+                  onClick={handleConfirmarBorrado}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {showAddEmployeeMenu && (
         <div className={styles.modalOverlay}>
@@ -242,3 +504,15 @@ export default function Empleados() {
     </div>
   );
 }
+    const menuItemStyle: React.CSSProperties = {
+    display: "block",
+    width: "100%",
+    padding: "10px 16px",
+    background: "transparent",
+    border: "none",
+    textAlign: "left",
+    fontSize: "14px",
+    cursor: "pointer",
+    color: "#222222",
+    fontFamily: "inherit"
+  };

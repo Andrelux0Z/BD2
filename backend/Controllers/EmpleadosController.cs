@@ -38,7 +38,7 @@ namespace ProyectoBases2.Api.Controllers
 
                         command.Parameters.AddWithValue("@inFiltro", filtroParam);
                         command.Parameters.AddWithValue("@inIdPostByUser", 1);
-                        command.Parameters.AddWithValue("@inPostInIP", "127.0.0.1");
+                        command.Parameters.AddWithValue("@inIpPostIn", "127.0.0.1");
                         
                         var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
                         command.Parameters.Add(outResultCode);
@@ -49,8 +49,9 @@ namespace ProyectoBases2.Api.Controllers
                             {
                                 empleados.Add(new
                                 {
-                                    Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                                    DocumentoIdentidad = reader.GetString(reader.GetOrdinal("ValorDocumentoIdentidad"))
+                                    id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    nombre = reader.GetString(reader.GetOrdinal("Nombre")),
+                                    documentoIdentidad = reader.GetString(reader.GetOrdinal("ValorDocumentoIdentidad"))
                                 });
                             }
                         }
@@ -214,7 +215,7 @@ namespace ProyectoBases2.Api.Controllers
                         command.CommandType = CommandType.StoredProcedure;
                         command.Parameters.AddWithValue("@inId", id);
                         command.Parameters.AddWithValue("@inIdPostByUser", 1);
-                        command.Parameters.AddWithValue("@inPostInIP", "127.0.0.1");
+                        command.Parameters.AddWithValue("@@inIpPostIn", "127.0.0.1");
                         var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
                         command.Parameters.Add(outResultCode);
 
@@ -259,7 +260,7 @@ namespace ProyectoBases2.Api.Controllers
                         command.Parameters.AddWithValue("@inValorDocumentoIdentidad",   payload.Documento);
                         command.Parameters.AddWithValue("@inNombre",                    payload.Nombre);
                         command.Parameters.AddWithValue("@inIdPostByUser",              1);
-                        command.Parameters.AddWithValue("@inPostInIP",                  "127.0.0.1");
+                        command.Parameters.AddWithValue("@@inIpPostIn",                  "127.0.0.1");
                         var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
                         command.Parameters.Add(outResultCode);
 
@@ -297,7 +298,7 @@ namespace ProyectoBases2.Api.Controllers
                         command.CommandType = CommandType.StoredProcedure;
                         command.Parameters.AddWithValue("@inId",            id);
                         command.Parameters.AddWithValue("@inIdPostByUser",  1);
-                        command.Parameters.AddWithValue("@inPostInIP",      "127.0.0.1");
+                        command.Parameters.AddWithValue("@inIpPostIn",      "127.0.0.1");
                         var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
                         command.Parameters.Add(outResultCode);
 
@@ -326,7 +327,7 @@ namespace ProyectoBases2.Api.Controllers
                         command.CommandType = CommandType.StoredProcedure;
                         command.Parameters.AddWithValue("@inId",            id);
                         command.Parameters.AddWithValue("@inIdPostByUser",  1);
-                        command.Parameters.AddWithValue("@inPostInIP",      "127.0.0.1");
+                        command.Parameters.AddWithValue("@inIpPostIn",      "127.0.0.1");
                         var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
                         command.Parameters.Add(outResultCode);
 

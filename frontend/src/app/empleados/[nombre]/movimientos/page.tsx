@@ -24,6 +24,7 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
   const unwrappedParams = use(params);
   const [empleado, setEmpleado] = useState<EmpleadoInfo | null>(null);
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
+  const [showAddMovimiento, setShowAddMovimiento] = useState(false);
   const router = useRouter();
   const nombreEmpleado = unwrappedParams.nombre;
 
@@ -76,6 +77,10 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
     router.push("/empleados");
   };
 
+  const handleCerrarModal = () => {
+    setShowAddMovimiento(false);
+  };
+
   if (!empleado) {
     return (
       <div className={styles.page}>
@@ -88,53 +93,74 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
 
   return (
     <div className={styles.page}>
-      <main className={styles.card}>
-        <h1 className={styles.title}>{empleado.nombre}</h1>
-        
-        <div className={styles.filterRow}>
-          <span style={{ fontSize: "16px", color: "var(--muted)", fontWeight: 600 }}>
-            Identidad: {empleado.valorDocumentoIdentidad}
-          </span>
-        </div>
+      <div className={styles.contentWrap}>
+        <main className={styles.card}>
+          <h1 className={styles.title}>{empleado.nombre}</h1>
+          
+          <div className={styles.filterRow}>
+            <span style={{ fontSize: "16px", color: "var(--muted)", fontWeight: 600 }}>
+              Identidad: {empleado.valorDocumentoIdentidad}
+            </span>
+          </div>
 
-        <div className={styles.listPlaceholder}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Tipo</th>
-                <th>Usuario</th>
-                <th>Monto</th>
-                <th>Nuevo Saldo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {movimientos.map((mov, index) => (
-                <tr key={index}>
-                  <td>{new Date(mov.fecha).toLocaleDateString()}</td>
-                  <td>{mov.nombreTipoMovimiento}</td>
-                  <td>{mov.nombreUsuario}</td>
-                  <td>{mov.monto}</td>
-                  <td>{mov.nuevoSaldo}</td>
+          <div className={styles.listPlaceholder}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Usuario</th>
+                  <th>Monto</th>
+                  <th>Nuevo Saldo</th>
                 </tr>
-              ))}
-              {movimientos.length === 0 && (
-                <tr style={{ background: "transparent" }}>
-                  <td colSpan={5} style={{ textAlign: "center", color: "#888", padding: "30px 0" }}>
-                    No se encontraron movimientos registrados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button className={styles.button} onClick={handleRegresar}>
-            Volver
+              </thead>
+              <tbody>
+                {movimientos.map((mov, index) => (
+                  <tr key={index}>
+                    <td>{new Date(mov.fecha).toLocaleDateString()}</td>
+                    <td>{mov.nombreTipoMovimiento}</td>
+                    <td>{mov.nombreUsuario}</td>
+                    <td>{mov.monto}</td>
+                    <td>{mov.nuevoSaldo}</td>
+                  </tr>
+                ))}
+                {movimientos.length === 0 && (
+                  <tr style={{ background: "transparent" }}>
+                    <td colSpan={5} style={{ textAlign: "center", color: "#888", padding: "30px 0" }}>
+                      No se encontraron movimientos registrados.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button className={styles.button} onClick={handleRegresar}>
+              Volver
+            </button>
+          </div>
+        </main>
+
+        <div className={styles.addEmployeeSection}>
+          <button className={styles.addEmployeeBtn} onClick={() => setShowAddMovimiento(true)}>
+            Añadir Movimiento
           </button>
         </div>
-      </main>
+      </div>
+
+      {showAddMovimiento && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCard}>
+            <h2 className={styles.addEmployeeMenuTitle}>Añadir movimiento</h2>
+
+            <div className={styles.modalActions} style={{ marginTop: "16px" }}>
+              <button type="button" className={styles.modalButton} onClick={handleCerrarModal}>Volver</button>
+              <button type="button" className={styles.modalButton} onClick={() => alert("En construcción")}>Agregar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

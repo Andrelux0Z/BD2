@@ -21,7 +21,11 @@ namespace ProyectoBases2.Api.Controllers
             try
             {
                 // Obtenemos la IP de la conexión local o asignamos una por defecto
-                var remoteIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+                string remoteIp = "127.0.0.1";
+                if (HttpContext.Connection.RemoteIpAddress != null)
+                {
+                    remoteIp = HttpContext.Connection.RemoteIpAddress.ToString();
+                }
 
                 using (var connection = new SqlConnection(_connectionString))
                 {

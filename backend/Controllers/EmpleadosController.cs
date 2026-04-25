@@ -26,21 +26,22 @@ namespace ProyectoBases2.Api.Controllers
                 {
                     connection.Open();
 
-                    // Consulta básica de la tabla de empleados.
-                    // Si se desea se puede reemplazar la próxima query directa por un llamado a un Stored Procedure específico (ej: sp_ObtenerEmpleados)
-                    string query = "SELECT Id, Nombre, ValorDocumentoIdentidad as DocumentoIdentidad FROM dbo.Empleado";
-                    
-                    if (!string.IsNullOrWhiteSpace(filtro))
+                    using (var command = new SqlCommand("dbo.sp_ListarEmpleados", connection))
                     {
-                        query += " WHERE Nombre LIKE @filtro OR ValorDocumentoIdentidad LIKE @filtro";
-                    }
+                        command.CommandType = CommandType.StoredProcedure;
 
-                    using (var command = new SqlCommand(query, connection))
-                    {
-                        if (!string.IsNullOrWhiteSpace(filtro))
+                        object filtroParam = string.Empty;
+                        if (filtro != null)
                         {
-                            command.Parameters.AddWithValue("@filtro", $"%{filtro}%");
+                            filtroParam = filtro;
                         }
+
+                        command.Parameters.AddWithValue("@inFiltro", filtroParam);
+                        command.Parameters.AddWithValue("@inIdPostByUser", 1);
+                        command.Parameters.AddWithValue("@inPostInIP", "127.0.0.1");
+                        
+                        var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        command.Parameters.Add(outResultCode);
 
                         using (var reader = command.ExecuteReader())
                         {
@@ -48,9 +49,8 @@ namespace ProyectoBases2.Api.Controllers
                             {
                                 empleados.Add(new
                                 {
-                                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
                                     Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                                    DocumentoIdentidad = reader.GetString(reader.GetOrdinal("DocumentoIdentidad"))
+                                    DocumentoIdentidad = reader.GetString(reader.GetOrdinal("ValorDocumentoIdentidad"))
                                 });
                             }
                         }
@@ -62,6 +62,141 @@ namespace ProyectoBases2.Api.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { success = false, message = "Error al recuperar empleados", error = ex.Message });
+            }
+        }
+
+        // Obtiene un empleado por su nombre
+        [HttpGet("byname/{nombre}")]
+        public IActionResult GetEmpleadoPorNombre(string nombre)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    using (var command = new SqlCommand("dbo.sp_BuscarEmpleadoPorNombre", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@nombre", nombre);
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                var empleado = new
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
+                                    ValorDocumentoIdentidad = reader.GetString(reader.GetOrdinal("ValorDocumentoIdentidad")),
+                                    SaldoVacaciones = reader.GetDecimal(reader.GetOrdinal("SaldoVacaciones"))
+                                };
+
+                                return Ok(new { success = true, empleado });
+                            }
+                        }
+                    }
+                }
+
+                return NotFound(new { success = false, message = "Empleado no encontrado" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Error al buscar empleado", error = ex.Message });
+            }
+        }
+
+        // Lista de puestos (nombres únicos en orden alfabético)
+        [HttpGet("puestos")]
+        public IActionResult GetPuestos()
+        {
+            try
+            {
+                var puestos = new List<object>();
+
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    using (var cmd = new SqlCommand("dbo.sp_ObtenerPuestos", connection))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                puestos.Add(new
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    Nombre = reader.GetString(reader.GetOrdinal("Nombre"))
+                                });
+                            }
+                        }
+                    }
+                }
+
+                return Ok(puestos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Error al recuperar puestos", error = ex.Message });
+            }
+        }
+
+        // Inserta un nuevo empleado
+        [HttpPost]
+        public IActionResult CreateEmpleado([FromBody] dynamic payload)
+        {
+            try
+            {
+                string nombre = (string)payload.nombre;
+                string documento = (string)payload.documento;
+                int idPuesto = (int)payload.idPuesto;
+                DateTime fechaContratacion = DateTime.Now;
+
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    using (var cmd = new SqlCommand("dbo.sp_InsertarEmpleado", connection))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@inIdPuesto", idPuesto);
+                        cmd.Parameters.AddWithValue("@inValorDocumentoIdentidad", documento);
+                        cmd.Parameters.AddWithValue("@inNombre", nombre);
+                        cmd.Parameters.AddWithValue("@inFechaContratacion", fechaContratacion);
+                        cmd.Parameters.AddWithValue("@inIdPostByUser", 1);
+                        cmd.Parameters.AddWithValue("@inIpPostIn", "127.0.0.1");
+
+                        var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        cmd.Parameters.Add(outResultCode);
+
+                        cmd.ExecuteNonQuery();
+
+                        int resultCode = (int)outResultCode.Value;
+
+                        if (resultCode == 0)
+                        {
+                            return Ok(new { success = true });
+                        }
+                        else if (resultCode == 50004)
+                        {
+                            return Conflict(new { success = false, message = "Ya existe un empleado con esa identificación" });
+                        }
+                        else if (resultCode == 50005)
+                        {
+                            return Conflict(new { success = false, message = "Ya existe un empleado con ese nombre" });
+                        }
+                        else
+                        {
+                            return StatusCode(400, new { success = false, message = "Error al crear empleado", code = resultCode });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Error al crear empleado", error = ex.Message });
             }
         }
     }

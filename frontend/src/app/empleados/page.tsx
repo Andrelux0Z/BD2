@@ -44,11 +44,14 @@ export default function Empleados() {
   const [showBorrar, setShowBorrar] = useState(false);
   const [borrarEmpleado, setBorrarEmpleado] = useState<Empleado | null>(null);
 
+  const [idUsuario, setIdUsuario] = useState<number>(1);
+
   const fetchEmpleados = async (filtro?: string) => {
     try {
-      let url = "http://localhost:5028/api/empleados";
+      const idUser = localStorage.getItem("idUsuario") || "1";
+      let url = `http://localhost:5028/api/empleados?idUsuario=${idUser}`;
       if (filtro) {
-        url += `?filtro=${encodeURIComponent(filtro)}`;
+        url += `&filtro=${encodeURIComponent(filtro)}`;
       }
       const res = await fetch(url);
       if (res.ok) {
@@ -62,9 +65,11 @@ export default function Empleados() {
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
+    const id = localStorage.getItem("idUsuario");
+    if (id) setIdUsuario(Number(id));
     fetchEmpleados();
-  }, []);
+}, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -137,7 +142,7 @@ export default function Empleados() {
       const res = await fetch("http://localhost:5028/api/empleados", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: formNombre.trim(), documento: formDocumento.trim(), idPuesto: formPuesto }),
+        body: JSON.stringify({ nombre: formNombre.trim(), documento: formDocumento.trim(), idPuesto: formPuesto, idUsuario: localStorage.getItem("idUsuario") || "1" }),
       });
 
       if (res.ok) {
@@ -162,7 +167,8 @@ export default function Empleados() {
   const handleConsultar = async (empleado: Empleado) => {
     setMenuAbierto(null);
     try {
-      const res = await fetch(`http://localhost:5028/api/empleados/${empleado.id}`);
+      const idUser = localStorage.getItem("idUsuario") || "1";
+      const res = await fetch(`http://localhost:5028/api/empleados/${empleado.id}?idUsuario=${idUser}`);
       const data = await res.json();
       if (data.success) {
         setEmpleadoDetalle(data.empleado);
@@ -201,7 +207,8 @@ export default function Empleados() {
       const res = await fetch(`http://localhost:5028/api/empleados/${editId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: editNombre.trim(), documento: editDocumento.trim(), idPuesto: editPuesto })
+        body: JSON.stringify({ nombre: editNombre.trim(), documento: editDocumento.trim(), idPuesto: editPuesto, idUsuario: localStorage.getItem("idUsuario") || "1" })
+
       });
 
       if (res.ok) {
@@ -223,9 +230,11 @@ export default function Empleados() {
     setBorrarEmpleado(empleado);
 
     try {
-      await fetch(`http://localhost:5028/api/empleados/${empleado.id}/intento-borrado`, {
+      const idUser = localStorage.getItem("idUsuario") || "1";
+      await fetch(`http://localhost:5028/api/empleados/${empleado.id}/intento-borrado?idUsuario=${idUser}`, {
         method: "POST"
       });
+
     } catch (err) {
       console.error(err);
     }
@@ -237,7 +246,8 @@ export default function Empleados() {
     if (!borrarEmpleado) return;
 
     try {
-      const res = await fetch(`http://localhost:5028/api/empleados/${borrarEmpleado.id}`, {
+      const idUser = localStorage.getItem("idUsuario") || "1";
+      const res = await fetch(`http://localhost:5028/api/empleados/${borrarEmpleado.id}?idUsuario=${idUser}`, {
         method: "DELETE"
       });
 

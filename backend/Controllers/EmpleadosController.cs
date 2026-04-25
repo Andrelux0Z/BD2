@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Text.Json;
 
 namespace ProyectoBases2.Api.Controllers
 {
@@ -145,13 +146,13 @@ namespace ProyectoBases2.Api.Controllers
 
         // Inserta un nuevo empleado
         [HttpPost]
-        public IActionResult CreateEmpleado([FromBody] dynamic payload)
+        public IActionResult CreateEmpleado([FromBody] JsonElement payload)
         {
             try
             {
-                string nombre = (string)payload.nombre;
-                string documento = (string)payload.documento;
-                int idPuesto = (int)payload.idPuesto;
+                string nombre = payload.GetProperty("nombre").GetString();
+                string documento = payload.GetProperty("documento").GetString();
+                int idPuesto = payload.GetProperty("idPuesto").GetInt32();
                 DateTime fechaContratacion = DateTime.Now;
 
                 using (var connection = new SqlConnection(_connectionString))

@@ -16,7 +16,7 @@ namespace ProyectoBases2.Api.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetEmpleados([FromQuery] string? filtro = null)
+        public IActionResult GetEmpleados([FromQuery] string? filtro = null, [FromQuery] int idUsuario = 1)
         {
             try
             {
@@ -37,8 +37,8 @@ namespace ProyectoBases2.Api.Controllers
                         }
 
                         command.Parameters.AddWithValue("@inFiltro", filtroParam);
-                        command.Parameters.AddWithValue("@inIdPostByUser", 1);
-                        command.Parameters.AddWithValue("@inPostInIP", "127.0.0.1");
+                        command.Parameters.AddWithValue("@inIdPostByUser", idUsuario);
+                        command.Parameters.AddWithValue("@inIpPostIn", "127.0.0.1");
                         
                         var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
                         command.Parameters.Add(outResultCode);
@@ -49,8 +49,9 @@ namespace ProyectoBases2.Api.Controllers
                             {
                                 empleados.Add(new
                                 {
-                                    Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                                    DocumentoIdentidad = reader.GetString(reader.GetOrdinal("ValorDocumentoIdentidad"))
+                                    id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    nombre = reader.GetString(reader.GetOrdinal("Nombre")),
+                                    documentoIdentidad = reader.GetString(reader.GetOrdinal("ValorDocumentoIdentidad"))
                                 });
                             }
                         }
@@ -79,7 +80,6 @@ namespace ProyectoBases2.Api.Controllers
                     {
                         command.CommandType = CommandType.StoredProcedure;
                         command.Parameters.AddWithValue("@nombre", nombre);
-
                         using (var reader = command.ExecuteReader())
                         {
                             if (reader.Read())
@@ -152,6 +152,7 @@ namespace ProyectoBases2.Api.Controllers
                 string nombre = (string)payload.nombre;
                 string documento = (string)payload.documento;
                 int idPuesto = (int)payload.idPuesto;
+                int idUsuario = (int)(payload.idUsuario ?? 1);
                 DateTime fechaContratacion = DateTime.Now;
 
                 using (var connection = new SqlConnection(_connectionString))
@@ -165,7 +166,7 @@ namespace ProyectoBases2.Api.Controllers
                         cmd.Parameters.AddWithValue("@inValorDocumentoIdentidad", documento);
                         cmd.Parameters.AddWithValue("@inNombre", nombre);
                         cmd.Parameters.AddWithValue("@inFechaContratacion", fechaContratacion);
-                        cmd.Parameters.AddWithValue("@inIdPostByUser", 1);
+                        cmd.Parameters.AddWithValue("@inIdPostByUser", idUsuario);
                         cmd.Parameters.AddWithValue("@inIpPostIn", "127.0.0.1");
 
                         var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
@@ -199,5 +200,160 @@ namespace ProyectoBases2.Api.Controllers
                 return StatusCode(500, new { success = false, message = "Error al crear empleado", error = ex.Message });
             }
         }
+
+        // Consulta un empleado por id
+        [HttpGet("{id}")]
+        public IActionResult GetEmpleadoPorId(int id, [FromQuery] int idUsuario = 1)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    using (var command = new SqlCommand("dbo.sp_ConsultarEmpleado", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@inId", id);
+                        command.Parameters.AddWithValue("@inIdPostByUser", idUsuario);
+                        command.Parameters.AddWithValue("@inIpPostIn", "127.0.0.1");
+                        var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        command.Parameters.Add(outResultCode);
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                var empleado = new
+                                {
+                                    Nombre = reader["Nombre"].ToString(),
+                                    ValorDocumentoIdentidad = reader["ValorDocumentoIdentidad"].ToString(),
+                                    NombrePuesto = reader["NombrePuesto"].ToString(),
+                                    SaldoVacaciones = reader["SaldoVacaciones"]
+                                };
+                                return Ok(new { success = true, empleado });
+                            }
+                        }
+                    }
+                }
+                return NotFound(new { success = false, message = "Empleado no encontrado" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Error al consultar empleado", error = ex.Message });
+            }
+        }
+
+        // Edita un empleado existente
+        [HttpPut("{id}")]
+        public IActionResult UpdateEmpleado(int id, [FromBody] EmpleadoUpdateRequest payload)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    using (var command = new SqlCommand("dbo.sp_ActualizarEmpleado", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@inId", id);
+                        command.Parameters.AddWithValue("@inIdPuesto", payload.IdPuesto);
+                        command.Parameters.AddWithValue("@inValorDocumentoIdentidad", payload.Documento);
+                        command.Parameters.AddWithValue("@inNombre", payload.Nombre);
+                        command.Parameters.AddWithValue("@inIdPostByUser", payload.IdUsuario);
+                        command.Parameters.AddWithValue("@@inIpPostIn",                  "127.0.0.1");
+                        var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        command.Parameters.Add(outResultCode);
+
+                        command.ExecuteNonQuery();
+                        int resultCode = (int)outResultCode.Value;
+
+                        if (resultCode == 0)
+                            return Ok(new { success = true });
+                        else if (resultCode == 50006)
+                            return Conflict(new { success = false, message = "Ya existe un empleado con esa identificación" });
+                        else if (resultCode == 50007)
+                            return Conflict(new { success = false, message = "Ya existe un empleado con ese nombre" });
+                        else
+                            return BadRequest(new { success = false, message = "Error al actualizar empleado", code = resultCode });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Error al actualizar empleado", error = ex.Message });
+            }
+        }
+
+        // Registra intento de borrado en bitacora
+        [HttpPost("{id}/intento-borrado")]
+        public IActionResult IntentoBorrado(int id, [FromQuery] int idUsuario = 1)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    using (var command = new SqlCommand("dbo.sp_IntentoBorrarEmpleado", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@inId", id);
+                        command.Parameters.AddWithValue("@inIdPostByUser", idUsuario);
+                        command.Parameters.AddWithValue("@inIpPostIn", "127.0.0.1");
+                        var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        command.Parameters.Add(outResultCode);
+
+                        command.ExecuteNonQuery();
+                        return Ok(new { success = true });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Error al registrar intento", error = ex.Message });
+            }
+        }
+
+        // Borrado logico de un empleado
+        [HttpDelete("{id}")]
+        public IActionResult DeleteEmpleado(int id, [FromQuery] int idUsuario = 1)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    using (var command = new SqlCommand("dbo.sp_BorrarEmpleado", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@inId",id);
+                        command.Parameters.AddWithValue("@inIdPostByUser", idUsuario);
+                        command.Parameters.AddWithValue("@inIpPostIn", "127.0.0.1");
+                        var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        command.Parameters.Add(outResultCode);
+
+                        command.ExecuteNonQuery();
+                        int resultCode = (int)outResultCode.Value;
+
+                        if (resultCode == 0)
+                            return Ok(new { success = true });
+                        else
+                            return BadRequest(new { success = false, code = resultCode });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Error al eliminar empleado", error = ex.Message });
+            }
+        }
+
     }
+    public class EmpleadoUpdateRequest
+    {
+        public string Nombre    { get; set; } = string.Empty;
+        public string Documento { get; set; } = string.Empty;
+        public int    IdPuesto  { get; set; }
+        public int IdUsuario { get; set; } = 1;
+    }
+
 }

@@ -72,6 +72,42 @@ namespace ProyectoBases2.Api.Controllers
                 return StatusCode(500, new { success = false, message = "Error al conectar con la base de datos.", error = ex.Message });
             }
         }
+
+        [HttpPost("logout")]
+        public IActionResult Logout([FromBody] LogoutRequest request)
+        {
+            try
+            {
+                string remoteIp = "127.0.0.1";
+                if (HttpContext.Connection.RemoteIpAddress != null)
+                {
+                    remoteIp = HttpContext.Connection.RemoteIpAddress.ToString();
+                }
+
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    using (var command = new SqlCommand("dbo.sp_InsertarBitacoraEvento", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.Add(new SqlParameter("@inIdTipoEvento", 4));
+                        command.Parameters.Add(new SqlParameter("@inDescripcion", ""));
+                        command.Parameters.Add(new SqlParameter("@inIdPostByUser", request.IdUsuario));
+                        command.Parameters.Add(new SqlParameter("@inIpPostIn", remoteIp));
+                        var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        command.Parameters.Add(outResultCode);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Error al cerrar sesión", error = ex.Message });
+            }
+        }
     }
 
     public class LoginRequest
@@ -79,4 +115,10 @@ namespace ProyectoBases2.Api.Controllers
         public string Usuario { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
+
+    public class LogoutRequest
+    {
+        public int IdUsuario { get; set; } = 1;
+    }
+    
 }

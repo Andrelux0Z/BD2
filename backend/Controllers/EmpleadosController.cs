@@ -260,7 +260,7 @@ namespace ProyectoBases2.Api.Controllers
                         command.Parameters.AddWithValue("@inValorDocumentoIdentidad", payload.Documento);
                         command.Parameters.AddWithValue("@inNombre", payload.Nombre);
                         command.Parameters.AddWithValue("@inIdPostByUser", payload.IdUsuario);
-                        command.Parameters.AddWithValue("@@inIpPostIn",                  "127.0.0.1");
+                        command.Parameters.AddWithValue("@inIpPostIn","127.0.0.1");
                         var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
                         command.Parameters.Add(outResultCode);
 
@@ -273,6 +273,10 @@ namespace ProyectoBases2.Api.Controllers
                             return Conflict(new { success = false, message = "Ya existe un empleado con esa identificación" });
                         else if (resultCode == 50007)
                             return Conflict(new { success = false, message = "Ya existe un empleado con ese nombre" });
+                        else if (resultCode == 50009)
+                            return Conflict(new { success = false, message = "Nombre de empleado no alfabético" });
+                        else if (resultCode == 50010)
+                            return Conflict(new { success = false, message = "Valor de documento de identidad no alfabético" });
                         else
                             return BadRequest(new { success = false, message = "Error al actualizar empleado", code = resultCode });
                     }

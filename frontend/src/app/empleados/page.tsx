@@ -261,6 +261,22 @@ useEffect(() => {
     }
   };
 
+  const handleLogout = async () => {
+      const idUser = localStorage.getItem("idUsuario") || "1";
+      try {
+        await fetch("http://localhost:5028/api/login/logout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idUsuario: Number(idUser) })
+        });
+      } catch (err) {
+        console.error(err);
+      }
+      localStorage.removeItem("isAuthenticated");
+      localStorage.removeItem("idUsuario");
+      router.push("/");
+    };
+
   const handleCerrarMenu = () => {
     setShowAddEmployeeMenu(false);
     setFormNombre("");
@@ -273,7 +289,15 @@ useEffect(() => {
     <div className={styles.page}>
       <div className={styles.contentWrap}>
         <main className={styles.card}>
-          <h1 className={styles.title}>Empleados</h1>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+            <h1 className={styles.title}>Empleados</h1>
+            <button
+              className={styles.moreBtn}
+              onClick={handleLogout}
+            >
+              Cerrar sesión
+            </button>
+          </div>
         
           <div className={styles.filterRow}>
             <input

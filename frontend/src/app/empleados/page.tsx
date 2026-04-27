@@ -119,30 +119,19 @@ useEffect(() => {
   const submitAgregarEmpleado = async () => {
     setErrorMessage("");
 
-    if (!formNombre.trim()) {
-      setErrorMessage("El nombre es requerido");
-      return;
-    }
-    if (!nameAllowed(formNombre)) {
-      setErrorMessage("El nombre solo puede tener letras");
-      return;
-    }
-    if (!formDocumento.trim()) {
-      setErrorMessage("La identificación es requerida");
-      return;
-    }
-    if (formPuesto === 0) {
-      setErrorMessage("Por favor seleccione un puesto");
-      return;
-    }
-
     try {
       setSubmitText("Guardando...");
 
       const res = await fetch("http://localhost:5028/api/empleados", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: formNombre.trim(), documento: formDocumento.trim(), idPuesto: formPuesto, idUsuario: localStorage.getItem("idUsuario") || "1" }),
+        body: JSON.stringify({ 
+        nombre: formNombre.trim(), 
+        documento: formDocumento.trim(), 
+        idPuesto: formPuesto,
+        nombrePuesto: puestos.find(p => p.id === formPuesto)?.nombre ?? "",
+        idUsuario: localStorage.getItem("idUsuario") || "1" 
+        }),
       });
 
       if (res.ok) {

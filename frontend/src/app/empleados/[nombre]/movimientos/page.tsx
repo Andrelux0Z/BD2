@@ -115,14 +115,6 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
   const submitAgregarMovimiento = async () => {
     setErrorMessage("");
 
-    if (formTipoMovimiento === 0) {
-      setErrorMessage("Por favor seleccione un tipo de movimiento");
-      return;
-    }
-    if (!formMonto || parseFloat(formMonto) <= 0) {
-      setErrorMessage("El monto debe ser mayor a 0");
-      return;
-    }
     if (!empleadoId) {
       setErrorMessage("No se pudo identificar al empleado");
       return;
@@ -137,7 +129,8 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
         body: JSON.stringify({
           idEmpleado: empleadoId,
           idTipoMovimiento: formTipoMovimiento,
-          monto: parseFloat(formMonto),
+          monto: parseFloat(formMonto) || 0,
+          idUsuario: Number(localStorage.getItem("idUsuario") || "1")
         }),
       });
 

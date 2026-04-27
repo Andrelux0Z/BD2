@@ -150,11 +150,47 @@ namespace ProyectoBases2.Api.Controllers
         {
             try
             {
-                string nombre = payload.GetProperty("nombre").GetString();
-                string documento = payload.GetProperty("documento").GetString();
-                int idPuesto = payload.GetProperty("idPuesto").GetInt32();
-                int idUsuario = payload.TryGetProperty("idUsuario", out var uEl) ? uEl.GetInt32() : 1;
+                string nombre = payload.GetProperty("nombre").GetString() ?? "";
+                string documento = payload.GetProperty("documento").GetString() ?? "";
+                int idPuesto = 0;
+                int idUsuario = 1;
+                string nombrePuesto = payload.TryGetProperty("nombrePuesto", out var npProp) ? npProp.GetString() ?? "" : "";
                 DateTime fechaContratacion = DateTime.Now;
+                if (payload.TryGetProperty("idPuesto", out var idPuestoProp))
+                {
+                    if (idPuestoProp.ValueKind == JsonValueKind.Number)
+                        idPuesto = idPuestoProp.GetInt32();
+                    else
+                        int.TryParse(idPuestoProp.GetString(), out idPuesto);
+                }
+
+                if (payload.TryGetProperty("idUsuario", out var idUsuarioProp))
+                {
+                    if (idUsuarioProp.ValueKind == JsonValueKind.Number)
+                        idUsuario = idUsuarioProp.GetInt32();
+                    else
+                        int.TryParse(idUsuarioProp.GetString(), out idUsuario);
+                }
+
+                if (string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(documento) || idPuesto == 0)
+                {
+                    using (var connBitacora = new SqlConnection(_connectionString))
+                    {
+                        connBitacora.Open();
+                        using (var cmdBitacora = new SqlCommand("dbo.sp_InsertarBitacoraEvento", connBitacora))
+                        {
+                            cmdBitacora.CommandType = CommandType.StoredProcedure;
+                            cmdBitacora.Parameters.Add(new SqlParameter("@inIdTipoEvento", 5));
+                            cmdBitacora.Parameters.Add(new SqlParameter("@inDescripcion", $"Intento fallido campos vacios | Nombre: {nombre} | Cedula: {documento} | Puesto: {nombrePuesto}"));
+                            cmdBitacora.Parameters.Add(new SqlParameter("@inIdPostByUser", idUsuario));
+                            cmdBitacora.Parameters.Add(new SqlParameter("@inIpPostIn", "127.0.0.1"));
+                            var outBitacora = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                            cmdBitacora.Parameters.Add(outBitacora);
+                            cmdBitacora.ExecuteNonQuery();
+                        }
+                    }
+                    return BadRequest(new { success = false, message = "Nombre, identificación y puesto son requeridos" });
+                }
 
                 using (var connection = new SqlConnection(_connectionString))
                 {
@@ -189,6 +225,10 @@ namespace ProyectoBases2.Api.Controllers
                         {
                             return Conflict(new { success = false, message = "Ya existe un empleado con ese nombre" });
                         }
+                        else if (resultCode == 50009)
+                            return Conflict(new { success = false, message = "Nombre de empleado no alfabético" });
+                        else if (resultCode == 50010)
+                            return Conflict(new { success = false, message = "Valor de documento de identidad no numérico" });
                         else
                         {
                             return StatusCode(400, new { success = false, message = "Error al crear empleado", code = resultCode });
@@ -198,7 +238,7 @@ namespace ProyectoBases2.Api.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = "Error al crear empleado", error = ex.Message });
+                return StatusCode(500, new { success = false, message = "Error al crear empleado", error = ex.Message, stack = ex.StackTrace });
             }
         }
 

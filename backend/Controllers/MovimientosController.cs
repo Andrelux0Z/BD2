@@ -135,10 +135,30 @@ namespace ProyectoBases2.Api.Controllers
                 int idEmpleado = payload.GetProperty("idEmpleado").GetInt32();
                 int idTipoMovimiento = payload.GetProperty("idTipoMovimiento").GetInt32();
                 decimal monto = payload.GetProperty("monto").GetDecimal();
+                int idUsuario = payload.TryGetProperty("idUsuario", out var idUsuarioProp) ? idUsuarioProp.GetInt32() : 1;
+                string remoteIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
 
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
+
+                    // Validaciones en backend
+                    if (idTipoMovimiento == 0 || monto <= 0)
+                    {
+                        using (var cmdBitacora = new SqlCommand("dbo.sp_InsertarBitacoraEvento", connection))
+                        {
+                            cmdBitacora.CommandType = CommandType.StoredProcedure;
+                            cmdBitacora.Parameters.Add(new SqlParameter("@inIdTipoEvento", 13));
+                            cmdBitacora.Parameters.Add(new SqlParameter("@inDescripcion", "Intento fallido: tipo de movimiento o monto invalido"));
+                            cmdBitacora.Parameters.Add(new SqlParameter("@inIdPostByUser", idUsuario));
+                            cmdBitacora.Parameters.Add(new SqlParameter("@inIpPostIn", remoteIp));
+                            var outBitacora = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                            cmdBitacora.Parameters.Add(outBitacora);
+                            cmdBitacora.ExecuteNonQuery();
+                        }
+                        return BadRequest(new { success = false, message = "Tipo de movimiento o monto invalido" });
+                    }
 
                     using (var cmd = new SqlCommand("dbo.sp_InsertarMovimiento", connection))
                     {
@@ -146,7 +166,7 @@ namespace ProyectoBases2.Api.Controllers
                         cmd.Parameters.AddWithValue("@inIdEmpleado", idEmpleado);
                         cmd.Parameters.AddWithValue("@inIdTipoMovimiento", idTipoMovimiento);
                         cmd.Parameters.AddWithValue("@inMonto", monto);
-                        cmd.Parameters.AddWithValue("@inIdPostByUser", 1);
+                        cmd.Parameters.AddWithValue("@inIdPostByUser", idUsuario);
                         cmd.Parameters.AddWithValue("@inIpPostIn", "127.0.0.1");
 
                         var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };

@@ -269,7 +269,8 @@ namespace ProyectoBases2.Api.Controllers
                                     Nombre = reader["Nombre"].ToString(),
                                     ValorDocumentoIdentidad = reader["ValorDocumentoIdentidad"].ToString(),
                                     NombrePuesto = reader["NombrePuesto"].ToString(),
-                                    SaldoVacaciones = reader["SaldoVacaciones"]
+                                    SaldoVacaciones = reader["SaldoVacaciones"],
+                                    fechaContratacion       = reader["FechaContratacion"]
                                 };
                                 return Ok(new { success = true, empleado });
                             }

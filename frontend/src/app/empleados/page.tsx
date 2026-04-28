@@ -14,6 +14,7 @@ interface EmpleadoDetalle {
   valorDocumentoIdentidad: string;
   nombrePuesto: string;
   saldoVacaciones: number;
+  fechaContratacion: string;
 }
 
 export default function Empleados() {
@@ -168,7 +169,7 @@ useEffect(() => {
     }
   };
 
-  //  EDITAR 
+  //  ACTUALIZAR 
   const handleAbrirEditar = async (empleado: Empleado) => {
     setMenuAbierto(null);
     setEditId(empleado.id);
@@ -399,6 +400,11 @@ useEffect(() => {
 
               <label className={styles.fieldLabel}>Saldo de Vacaciones</label>
               <p style={{ margin: 0, fontSize: "14px" }}>{String(empleadoDetalle.saldoVacaciones)}</p>
+
+              <label className={styles.fieldLabel}>Fecha de Contratación</label>
+              <p style={{ margin: 0, fontSize: "14px" }}>
+                {new Date(empleadoDetalle.fechaContratacion).toLocaleDateString()}
+              </p>
 
               <div className={styles.modalActions}>
                 <button className={styles.modalButton} onClick={() => setShowConsultar(false)}>

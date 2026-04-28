@@ -40,13 +40,13 @@ SET @xml = '
 </Datos>'
 
 -- Puestos
-/*
+
 INSERT INTO dbo.Puesto (Nombre, SalarioxHora)
 SELECT
     x.value('@Nombre',        'NVARCHAR(100)')
     ,x.value('@SalarioxHora', 'DECIMAL(10,2)')
 FROM @xml.nodes('/Datos/Puestos/Puesto') AS t(x)
-*/
+
 
 -- TipoEvento
 

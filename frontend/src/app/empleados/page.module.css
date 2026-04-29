@@ -82,11 +82,68 @@
 
 .listPlaceholder {
   height: 300px;
-  border: 2px dashed var(--outline);
   border-radius: 4px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 14px;
+}
+
+.table th, .table td {
+  border-bottom: 1px solid var(--outline);
+  padding: 12px 8px;
+  text-align: left;
+}
+
+.table th {
+  background: #f9f9f9;
+  color: #555555;
+  font-weight: 600;
+}
+
+.table tr:hover {
+  background: #fdfdfd;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.movimientosBtn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 120ms;
+}
+
+.movimientosBtn:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.moreBtn {
+  background: transparent;
+  border: 1px solid var(--outline);
+  color: var(--muted);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms;
+}
+
+.moreBtn:hover {
+  background: #eaeaea;
+  color: var(--ink);
 }

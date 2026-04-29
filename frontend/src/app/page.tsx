@@ -35,7 +35,7 @@ export default function Home() {
         localStorage.setItem("isAuthenticated", "true");
         localStorage.setItem("idUsuario", data.idUsuario.toString());
         // Redireccionamiento posterior al inicio de sesión
-        // router.push("/dashboard");
+        router.push("/empleados");
       } else {
         if (data.message) {
           setMessage(data.message);

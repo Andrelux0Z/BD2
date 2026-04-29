@@ -1,12 +1,48 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
+interface Empleado {
+  id: number;
+  nombre: string;
+  documentoIdentidad: string;
+}
+
 export default function Empleados() {
+  const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [filterText, setFilterText] = useState("");
+  const router = useRouter();
+
+  const fetchEmpleados = async (filtro?: string) => {
+    try {
+      let url = "http://localhost:5028/api/empleados";
+      if (filtro) {
+        url += `?filtro=${encodeURIComponent(filtro)}`;
+      }
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setEmpleados(data);
+      } else {
+        console.error("Error al cargar la lista");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmpleados();
+  }, []);
 
   const handleFilter = () => {
-    // Funcionalidad de filtrado a implementar
+    fetchEmpleados(filterText);
+  };
+
+  const handleIrAMovimientos = (empleado: Empleado) => {
+    // Codifica la identidad para la url del futuro módulo sugerido
+    router.push(`/empleados/${encodeURIComponent(empleado.documentoIdentidad)}/movimientos`);
   };
 
   return (
@@ -29,7 +65,47 @@ export default function Empleados() {
         </div>
 
         <div className={styles.listPlaceholder}>
-          Espacio destinado para la lista de empleados
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Documento de Identidad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {empleados.map((emp) => (
+                <tr key={emp.id}>
+                  <td>{emp.nombre}</td>
+                  <td>{emp.documentoIdentidad}</td>
+                  <td>
+                    <div className={styles.actionButtons}>
+                      <button 
+                        className={styles.movimientosBtn} 
+                        onClick={() => handleIrAMovimientos(emp)}
+                      >
+                        Movimientos
+                      </button>
+                      <button 
+                        className={styles.moreBtn} 
+                        title="Opciones adicionales: Editar, Borrar, Consultar"
+                        onClick={() => alert("Opciones en construcción")}
+                      >
+                        ...
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {empleados.length === 0 && (
+                <tr style={{ background: "transparent" }}>
+                  <td colSpan={3} style={{ textAlign: "center", color: "#888", padding: "30px 0" }}>
+                    No se encontraron empleados registrados.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </main>
     </div>

@@ -12,6 +12,7 @@ interface Empleado {
 export default function Empleados() {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [filterText, setFilterText] = useState("");
+  const [showAddEmployeeMenu, setShowAddEmployeeMenu] = useState(false);
   const router = useRouter();
 
   const fetchEmpleados = async (filtro?: string) => {
@@ -50,69 +51,97 @@ export default function Empleados() {
     router.push(`/empleados/${encodeURIComponent(nombreSinEspacios)}/movimientos`);
   };
 
+  const handleAgregarEmpleado = () => {
+    setShowAddEmployeeMenu(true);
+  };
+
+  const handleCerrarMenu = () => {
+    setShowAddEmployeeMenu(false);
+  };
+
   return (
     <div className={styles.page}>
-      <main className={styles.card}>
-        <h1 className={styles.title}>Empleados</h1>
+      <div className={styles.contentWrap}>
+        <main className={styles.card}>
+          <h1 className={styles.title}>Empleados</h1>
         
-        <div className={styles.filterRow}>
-          <input
-            className={styles.input}
-            type="text"
-            placeholder="Escriba para filtrar..."
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-            aria-label="Caja de texto para filtrar empleados"
-          />
-          <button className={styles.button} onClick={handleFilter}>
-            Filtrar
+          <div className={styles.filterRow}>
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="Escriba para filtrar..."
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              aria-label="Caja de texto para filtrar empleados"
+            />
+            <button className={styles.button} onClick={handleFilter}>
+              Filtrar
+            </button>
+          </div>
+
+          <div className={styles.listPlaceholder}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Documento de Identidad</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {empleados.map((emp) => (
+                  <tr key={emp.id}>
+                    <td>{emp.nombre}</td>
+                    <td>{emp.documentoIdentidad}</td>
+                    <td>
+                      <div className={styles.actionButtons}>
+                        <button 
+                          className={styles.movimientosBtn} 
+                          onClick={() => handleIrAMovimientos(emp)}
+                        >
+                          Movimientos
+                        </button>
+                        <button 
+                          className={styles.moreBtn} 
+                          title="Opciones adicionales: Editar, Borrar, Consultar"
+                          onClick={() => alert("Opciones en construcción")}
+                        >
+                          ...
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {empleados.length === 0 && (
+                  <tr style={{ background: "transparent" }}>
+                    <td colSpan={3} style={{ textAlign: "center", color: "#888", padding: "30px 0" }}>
+                      No se encontraron empleados registrados.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </main>
+
+        <div className={styles.addEmployeeSection}>
+          <button className={styles.addEmployeeBtn} onClick={handleAgregarEmpleado}>
+            Agregar Empleado
           </button>
         </div>
+      </div>
 
-        <div className={styles.listPlaceholder}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Documento de Identidad</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {empleados.map((emp) => (
-                <tr key={emp.id}>
-                  <td>{emp.nombre}</td>
-                  <td>{emp.documentoIdentidad}</td>
-                  <td>
-                    <div className={styles.actionButtons}>
-                      <button 
-                        className={styles.movimientosBtn} 
-                        onClick={() => handleIrAMovimientos(emp)}
-                      >
-                        Movimientos
-                      </button>
-                      <button 
-                        className={styles.moreBtn} 
-                        title="Opciones adicionales: Editar, Borrar, Consultar"
-                        onClick={() => alert("Opciones en construcción")}
-                      >
-                        ...
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {empleados.length === 0 && (
-                <tr style={{ background: "transparent" }}>
-                  <td colSpan={3} style={{ textAlign: "center", color: "#888", padding: "30px 0" }}>
-                    No se encontraron empleados registrados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {showAddEmployeeMenu && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalCard}>
+            <button className={styles.closeButton} onClick={handleCerrarMenu} aria-label="Cerrar menú de agregar empleado">
+              x
+            </button>
+            <p className={styles.addEmployeeMenuTitle}>Menú de agregar empleado</p>
+            <p className={styles.addEmployeeMenuText}>Aquí se configurará el formulario o las opciones de creación.</p>
+          </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }

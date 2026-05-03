@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import styles from "../../page.module.css";
 
@@ -20,13 +20,10 @@ interface Movimiento {
   postTime: string;
 }
 
-export default function MovimientosPage({ params }: { params: Promise<{ nombre: string }> }) {
+export default function MovimientosPage({ params }: { params: { nombre: string } }) {
   const [empleado, setEmpleado] = useState<EmpleadoInfo | null>(null);
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const router = useRouter();
-  
-  const unwrappedParams = use(params);
-  const nombreEmpleado = unwrappedParams.nombre;
 
   const fetchMovimientos = async (id: string) => {
     try {

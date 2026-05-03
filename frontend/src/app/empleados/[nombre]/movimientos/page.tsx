@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import styles from "../../page.module.css";
 
@@ -20,10 +20,12 @@ interface Movimiento {
   postTime: string;
 }
 
-export default function MovimientosPage({ params }: { params: { nombre: string } }) {
+export default function MovimientosPage({ params }: { params: Promise<{ nombre: string }> }) {
+  const unwrappedParams = use(params);
   const [empleado, setEmpleado] = useState<EmpleadoInfo | null>(null);
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const router = useRouter();
+  const nombreEmpleado = unwrappedParams.nombre;
 
   const fetchMovimientos = async (id: string) => {
     try {
@@ -45,15 +47,29 @@ export default function MovimientosPage({ params }: { params: { nombre: string }
   };
 
   useEffect(() => {
-    // Leemos el ID del empleado que se guardó desde la pantalla anterior
-    const idGuardado = sessionStorage.getItem("empleadoId");
-    
-    if (idGuardado) {
-      fetchMovimientos(idGuardado);
-    } else {
-      // Si por alguna razón no hay ID (p.e. refrescó la página en una nueva pestaña), vuelve a empleados
-      router.push("/empleados");
-    }
+    // Resolver el id del empleado a partir del nombre recibido en params
+    const nombreSinEspacios = nombreEmpleado;
+
+    const obtener = async () => {
+      try {
+        const res = await fetch(`http://localhost:5028/api/empleados/byname/${encodeURIComponent(nombreSinEspacios)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.empleado) {
+            fetchMovimientos(String(data.empleado.id));
+          } else {
+            router.push("/empleados");
+          }
+        } else {
+          router.push("/empleados");
+        }
+      } catch (err) {
+        console.error(err);
+        router.push("/empleados");
+      }
+    };
+
+    obtener();
   }, [router]);
 
   const handleRegresar = () => {

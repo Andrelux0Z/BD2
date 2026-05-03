@@ -206,33 +206,69 @@
   gap: 8px;
 }
 
-.closeButton {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1px solid var(--outline);
-  background: #ffffff;
-  color: var(--ink);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.closeButton:hover {
-  background: #f3f3f3;
-}
-
 .addEmployeeMenuTitle {
   margin: 0;
+  font-size: 26px;
   font-weight: 600;
   color: var(--ink);
 }
 
-.addEmployeeMenuText {
-  margin: 0;
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.fieldLabel {
+  font-size: 13px;
   color: var(--muted);
+  margin: 0 0 4px 0;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.modalInput {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 4px;
+  border: 1px solid var(--outline);
+  background: #ffffff;
   font-size: 14px;
+  color: var(--ink);
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.modalInput:focus {
+  outline: none;
+  border-color: #888888;
+}
+
+.modalButton {
+  height: 36px;
+  border-radius: 4px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 24px;
+  transition: background 120ms ease, transform 120ms ease;
+  font-family: inherit;
+}
+
+.modalButton:hover {
+  background: #178742;
+}
+
+.modalButton:active {
+  transform: translateY(1px);
 }

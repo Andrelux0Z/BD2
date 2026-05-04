@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Text.Json;
 
 namespace ProyectoBases2.Api.Controllers
 {
@@ -99,8 +100,9 @@ namespace ProyectoBases2.Api.Controllers
                 {
                     connection.Open();
 
-                    using (var cmd = new SqlCommand("SELECT Id, Nombre, TipoAccion FROM dbo.TipoMovimiento ORDER BY Nombre", connection))
+                    using (var cmd = new SqlCommand("dbo.sp_ObtenerTiposMovimiento", connection))
                     {
+                        cmd.CommandType = CommandType.StoredProcedure;
                         using (var reader = cmd.ExecuteReader())
                         {
                             while (reader.Read())
@@ -126,13 +128,13 @@ namespace ProyectoBases2.Api.Controllers
 
         // Insertar un nuevo movimiento
         [HttpPost]
-        public IActionResult CreateMovimiento([FromBody] dynamic payload)
+        public IActionResult CreateMovimiento([FromBody] JsonElement payload)
         {
             try
             {
-                int idEmpleado = (int)payload.idEmpleado;
-                int idTipoMovimiento = (int)payload.idTipoMovimiento;
-                decimal monto = (decimal)payload.monto;
+                int idEmpleado = payload.GetProperty("idEmpleado").GetInt32();
+                int idTipoMovimiento = payload.GetProperty("idTipoMovimiento").GetInt32();
+                decimal monto = payload.GetProperty("monto").GetDecimal();
 
                 using (var connection = new SqlConnection(_connectionString))
                 {

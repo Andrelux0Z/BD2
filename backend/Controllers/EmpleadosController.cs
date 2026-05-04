@@ -26,22 +26,22 @@ namespace ProyectoBases2.Api.Controllers
                 {
                     connection.Open();
 
-                    // Devuelve la lista de empleados ordenada alfabéticamente por nombre.
-                    string query = "SELECT Nombre, ValorDocumentoIdentidad as DocumentoIdentidad FROM dbo.Empleado";
-
-                    if (!string.IsNullOrWhiteSpace(filtro))
+                    using (var command = new SqlCommand("dbo.sp_ListarEmpleados", connection))
                     {
-                        query += " WHERE Nombre LIKE @filtro OR ValorDocumentoIdentidad LIKE @filtro";
-                    }
+                        command.CommandType = CommandType.StoredProcedure;
 
-                    query += " ORDER BY Nombre ASC";
-
-                    using (var command = new SqlCommand(query, connection))
-                    {
-                        if (!string.IsNullOrWhiteSpace(filtro))
+                        object filtroParam = string.Empty;
+                        if (filtro != null)
                         {
-                            command.Parameters.AddWithValue("@filtro", $"%{filtro}%");
+                            filtroParam = filtro;
                         }
+
+                        command.Parameters.AddWithValue("@inFiltro", filtroParam);
+                        command.Parameters.AddWithValue("@inIdPostByUser", 1);
+                        command.Parameters.AddWithValue("@inPostInIP", "127.0.0.1");
+                        
+                        var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        command.Parameters.Add(outResultCode);
 
                         using (var reader = command.ExecuteReader())
                         {
@@ -50,7 +50,7 @@ namespace ProyectoBases2.Api.Controllers
                                 empleados.Add(new
                                 {
                                     Nombre = reader.GetString(reader.GetOrdinal("Nombre")),
-                                    DocumentoIdentidad = reader.GetString(reader.GetOrdinal("DocumentoIdentidad"))
+                                    DocumentoIdentidad = reader.GetString(reader.GetOrdinal("ValorDocumentoIdentidad"))
                                 });
                             }
                         }
@@ -65,7 +65,7 @@ namespace ProyectoBases2.Api.Controllers
             }
         }
 
-        // Obtiene un empleado por su nombre (se pueden omitir espacios en la URL)
+        // Obtiene un empleado por su nombre
         [HttpGet("byname/{nombre}")]
         public IActionResult GetEmpleadoPorNombre(string nombre)
         {
@@ -75,11 +75,9 @@ namespace ProyectoBases2.Api.Controllers
                 {
                     connection.Open();
 
-                    // Buscamos por nombre ignorando espacios
-                    string query = "SELECT TOP 1 Id, Nombre, ValorDocumentoIdentidad, SaldoVacaciones FROM dbo.Empleado WHERE REPLACE(Nombre, ' ', '') = @nombre OR Nombre = @nombre";
-
-                    using (var command = new SqlCommand(query, connection))
+                    using (var command = new SqlCommand("dbo.sp_BuscarEmpleadoPorNombre", connection))
                     {
+                        command.CommandType = CommandType.StoredProcedure;
                         command.Parameters.AddWithValue("@nombre", nombre);
 
                         using (var reader = command.ExecuteReader())
@@ -123,19 +121,45 @@ namespace ProyectoBases2.Api.Controllers
 
                     if (!string.IsNullOrWhiteSpace(nombre))
                     {
-                        using (var cmd = new SqlCommand("SELECT COUNT(1) FROM dbo.Empleado WHERE Nombre = @nombre", connection))
+                        using (var cmd = new SqlCommand("dbo.sp_VerificarExistenteEmpleado", connection))
                         {
-                            cmd.Parameters.AddWithValue("@nombre", nombre);
-                            existsName = (int)cmd.ExecuteScalar() > 0;
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            
+                            object paramNombre = DBNull.Value;
+                            if (nombre != null)
+                            {
+                                paramNombre = nombre;
+                            }
+                            
+                            cmd.Parameters.AddWithValue("@nombre", paramNombre);
+                            var count = cmd.ExecuteScalar();
+                            
+                            if (count != null && count != DBNull.Value)
+                            {
+                                existsName = (int)count > 0;
+                            }
                         }
                     }
 
                     if (!string.IsNullOrWhiteSpace(documento))
                     {
-                        using (var cmd = new SqlCommand("SELECT COUNT(1) FROM dbo.Empleado WHERE ValorDocumentoIdentidad = @doc", connection))
+                        using (var cmd = new SqlCommand("dbo.sp_VerificarExistenteEmpleado", connection))
                         {
-                            cmd.Parameters.AddWithValue("@doc", documento);
-                            existsDocumento = (int)cmd.ExecuteScalar() > 0;
+                            cmd.CommandType = CommandType.StoredProcedure;
+                            
+                            object paramDoc = DBNull.Value;
+                            if (documento != null)
+                            {
+                                paramDoc = documento;
+                            }
+                            
+                            cmd.Parameters.AddWithValue("@documento", paramDoc);
+                            var count = cmd.ExecuteScalar();
+                            
+                            if (count != null && count != DBNull.Value)
+                            {
+                                existsDocumento = (int)count > 0;
+                            }
                         }
                     }
                 }
@@ -160,18 +184,19 @@ namespace ProyectoBases2.Api.Controllers
                 {
                     connection.Open();
 
-                    string query = "SELECT MIN(Id) AS Id, Nombre FROM dbo.Puesto GROUP BY Nombre ORDER BY Nombre ASC";
-
-                    using (var cmd = new SqlCommand(query, connection))
-                    using (var reader = cmd.ExecuteReader())
+                    using (var cmd = new SqlCommand("dbo.sp_ObtenerPuestos", connection))
                     {
-                        while (reader.Read())
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        using (var reader = cmd.ExecuteReader())
                         {
-                            puestos.Add(new
+                            while (reader.Read())
                             {
-                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                                Nombre = reader.GetString(reader.GetOrdinal("Nombre"))
-                            });
+                                puestos.Add(new
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    Nombre = reader.GetString(reader.GetOrdinal("Nombre"))
+                                });
+                            }
                         }
                     }
                 }
@@ -184,7 +209,7 @@ namespace ProyectoBases2.Api.Controllers
             }
         }
 
-        // Inserta un nuevo empleado (valida existencia)
+        // Inserta un nuevo empleado
         [HttpPost]
         public IActionResult CreateEmpleado([FromBody] dynamic payload)
         {
@@ -193,36 +218,45 @@ namespace ProyectoBases2.Api.Controllers
                 string nombre = (string)payload.nombre;
                 string documento = (string)payload.documento;
                 int idPuesto = (int)payload.idPuesto;
+                DateTime fechaContratacion = DateTime.Now;
 
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
 
-                    // Verificar duplicados
-                    using (var chk = new SqlCommand("SELECT COUNT(1) FROM dbo.Empleado WHERE Nombre = @nombre OR ValorDocumentoIdentidad = @doc", connection))
+                    using (var cmd = new SqlCommand("dbo.sp_InsertarEmpleado", connection))
                     {
-                        chk.Parameters.AddWithValue("@nombre", nombre);
-                        chk.Parameters.AddWithValue("@doc", documento);
-                        int exists = (int)chk.ExecuteScalar();
-                        if (exists > 0)
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@inIdPuesto", idPuesto);
+                        cmd.Parameters.AddWithValue("@inValorDocumentoIdentidad", documento);
+                        cmd.Parameters.AddWithValue("@inNombre", nombre);
+                        cmd.Parameters.AddWithValue("@inFechaContratacion", fechaContratacion);
+                        cmd.Parameters.AddWithValue("@inIdPostByUser", 1);
+                        cmd.Parameters.AddWithValue("@inIpPostIn", "127.0.0.1");
+
+                        var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                        cmd.Parameters.Add(outResultCode);
+
+                        cmd.ExecuteNonQuery();
+
+                        int resultCode = (int)outResultCode.Value;
+
+                        if (resultCode == 0)
                         {
-                            return Conflict(new { success = false, message = "Ya existe un empleado con ese nombre o identificación" });
+                            return Ok(new { success = true });
                         }
-                    }
-
-                    string insert = @"INSERT INTO dbo.Empleado (IdPuesto, ValorDocumentoIdentidad, Nombre, FechaContratacion, SaldoVacaciones, EsActivo)
-                                      VALUES (@idPuesto, @doc, @nombre, GETDATE(), 0, 1); SELECT SCOPE_IDENTITY();";
-
-                    using (var cmd = new SqlCommand(insert, connection))
-                    {
-                        cmd.Parameters.AddWithValue("@idPuesto", idPuesto);
-                        cmd.Parameters.AddWithValue("@doc", documento);
-                        cmd.Parameters.AddWithValue("@nombre", nombre);
-
-                        var newIdObj = cmd.ExecuteScalar();
-                        int newId = Convert.ToInt32(newIdObj);
-
-                        return Ok(new { success = true, id = newId });
+                        else if (resultCode == 50004)
+                        {
+                            return Conflict(new { success = false, message = "Ya existe un empleado con esa identificación" });
+                        }
+                        else if (resultCode == 50005)
+                        {
+                            return Conflict(new { success = false, message = "Ya existe un empleado con ese nombre" });
+                        }
+                        else
+                        {
+                            return StatusCode(400, new { success = false, message = "Error al crear empleado", code = resultCode });
+                        }
                     }
                 }
             }

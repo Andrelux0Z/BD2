@@ -47,9 +47,9 @@ export default function Empleados() {
   };
 
   const handleIrAMovimientos = (empleado: Empleado) => {
-    // Navega usando el nombre (sin espacios) en la URL
-    const nombreSinEspacios = empleado.nombre.replace(/\s+/g, "");
-    router.push(`/empleados/${encodeURIComponent(nombreSinEspacios)}/movimientos`);
+    // Reemplazar espacios por guiones para una URL más limpia
+    const nombreFormateado = empleado.nombre.replace(/\s+/g, "-");
+    router.push(`/empleados/${encodeURIComponent(nombreFormateado)}/movimientos`);
   };
 
   const handleAgregarEmpleado = () => {
@@ -98,26 +98,6 @@ export default function Empleados() {
     }
 
     try {
-      setSubmitText("Validando...");
-
-      // Comprobar duplicados en backend
-      const q = new URLSearchParams();
-      q.set("nombre", formNombre);
-      q.set("documento", formDocumento);
-
-      const chkRes = await fetch(`http://localhost:5028/api/empleados/exists?${q.toString()}`);
-      const chk = await chkRes.json();
-      if (chk.existsName) {
-        setErrorMessage("Ya existe un empleado con ese nombre.");
-        setSubmitText("Agregar");
-        return;
-      }
-      if (chk.existsDocumento) {
-        setErrorMessage("Ya existe un empleado con esa identificación.");
-        setSubmitText("Agregar");
-        return;
-      }
-
       setSubmitText("Guardando...");
 
       const res = await fetch("http://localhost:5028/api/empleados", {

@@ -47,12 +47,12 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
   };
 
   useEffect(() => {
-    // Resolver el id del empleado a partir del nombre recibido en params
-    const nombreSinEspacios = nombreEmpleado;
+    // Revertir los guiones por espacios para buscarlo en la BD correctamente
+    const nombreDecodificado = decodeURIComponent(nombreEmpleado).replace(/-/g, " ");
 
     const obtener = async () => {
       try {
-        const res = await fetch(`http://localhost:5028/api/empleados/byname/${encodeURIComponent(nombreSinEspacios)}`);
+        const res = await fetch(`http://localhost:5028/api/empleados/byname/${encodeURIComponent(nombreDecodificado)}`);
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.empleado) {

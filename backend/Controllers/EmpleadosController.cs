@@ -38,7 +38,7 @@ namespace ProyectoBases2.Api.Controllers
 
                         command.Parameters.AddWithValue("@inFiltro", filtroParam);
                         command.Parameters.AddWithValue("@inIdPostByUser", 1);
-                        command.Parameters.AddWithValue("@inPostInIP", "127.0.0.1");
+                        command.Parameters.AddWithValue("@inIpPostIn", "127.0.0.1");
                         
                         var outResultCode = new SqlParameter("@outResultCode", SqlDbType.Int) { Direction = ParameterDirection.Output };
                         command.Parameters.Add(outResultCode);

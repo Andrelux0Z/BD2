@@ -165,7 +165,7 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
   return (
     <div className={styles.page}>
       <div className={styles.contentWrap}>
-        <main className={styles.card}>
+        <main className={styles.card} style={{ width: "950px" }}>
           <h1 className={styles.title}>{empleado.nombre}</h1>
           
           <div className={styles.filterRow}>
@@ -183,6 +183,8 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
                   <th>Usuario</th>
                   <th>Monto</th>
                   <th>Nuevo Saldo</th>
+                  <th>IP</th>
+                  <th>Fecha/Hora Registro</th>
                 </tr>
               </thead>
               <tbody>
@@ -193,11 +195,13 @@ export default function MovimientosPage({ params }: { params: Promise<{ nombre: 
                     <td>{mov.nombreUsuario}</td>
                     <td>{mov.monto}</td>
                     <td>{mov.nuevoSaldo}</td>
+                    <td>{mov.ipPostIn}</td>
+                    <td>{new Date(mov.postTime).toLocaleString()}</td>
                   </tr>
                 ))}
                 {movimientos.length === 0 && (
                   <tr style={{ background: "transparent" }}>
-                    <td colSpan={5} style={{ textAlign: "center", color: "#888", padding: "30px 0" }}>
+                    <td colSpan={7} style={{ textAlign: "center", color: "#888", padding: "30px 0" }}>
                       No se encontraron movimientos registrados.
                     </td>
                   </tr>

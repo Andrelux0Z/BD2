@@ -60,9 +60,21 @@ namespace ProyectoBases2.Api.Controllers
                             // Aquí el frontend guardará un registro básico en el navegador y avanzará.
                             return Ok(new { success = true, idUsuario = idUsuario, message = "Inicio de sesión exitoso" });
                         }
+                        else if (resultCode == 50001)
+                        {
+                            return BadRequest(new { success = false, message = "El usuario ingresado no existe." });
+                        }
+                        else if (resultCode == 50002)
+                        {
+                            return BadRequest(new { success = false, message = "Contraseña incorrecta." });
+                        }
+                        else if (resultCode == 50003)
+                        {
+                            return BadRequest(new { success = false, message = "Cuenta bloqueada por múltiples intentos fallidos. Intente de nuevo en 20 minutos." });
+                        }
                         else
                         {
-                            return BadRequest(new { success = false, message = "Usuario o contraseña inválidos, o cuenta bloqueada." });
+                            return BadRequest(new { success = false, message = "Error inesperado al iniciar sesión." });
                         }
                     }
                 }

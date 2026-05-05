@@ -87,6 +87,29 @@
   transform: translateY(1px);
 }
 
+.logoutBtn {
+  background: transparent;
+  border: 1px solid #cc2927;
+  color: #cc2927;
+  height: 36px;
+  border-radius: 4px;
+  padding: 0 24px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 120ms;
+  white-space: nowrap;
+}
+
+.logoutBtn:hover {
+  background: #cc2927;
+  color: white;
+}
+
+.logoutBtn:active {
+  transform: translateY(1px);
+}
+
 .listPlaceholder {
   height: 300px;
   border-radius: 4px;

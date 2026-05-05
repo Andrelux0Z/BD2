@@ -281,7 +281,7 @@ useEffect(() => {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
             <h1 className={styles.title}>Empleados</h1>
             <button
-              className={styles.moreBtn}
+              className={styles.logoutBtn}
               onClick={handleLogout}
             >
               Cerrar sesión
